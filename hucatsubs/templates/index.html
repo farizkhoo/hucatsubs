@@ -1,0 +1,134 @@
+﻿<!DOCTYPE html>
+
+<head>
+    <title>Hu Cat Subs!</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <link rel="stylesheet" type="text/css" href="static/css/style.css" />
+    <script
+        src="https://code.jquery.com/jquery-3.4.1.js"
+        integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU="
+        crossorigin="anonymous">
+    </script>
+</head>
+
+<body>
+    <div id="notes-container"></div>
+    <div id="has-choices"></div>
+    <div id="subtitle-container"></div>
+
+    <script type="text/javascript">
+        const subtitles = {{ data|safe }};
+        let subtitlesLength = subtitles.length;
+        let subtitlesIndex = 0;
+        let currentChoices = [];
+        let hasChoices = false
+
+        function handlePrevious() {
+            if((subtitlesIndex - 1) < 0) {
+                return
+            }
+            subtitlesIndex--
+            currentChoices = Array.from(subtitles[subtitlesIndex]);
+
+            printSubtitles(parseCommentsFromSubtitle(getChoice()))
+        }
+
+        function handleNext() {
+            if((subtitlesIndex + 1) >= subtitlesLength) {
+                return
+            }
+            subtitlesIndex++
+            currentChoices = Array.from(subtitles[subtitlesIndex]);
+
+            printSubtitles(parseCommentsFromSubtitle(getChoice()))
+        }
+
+        function handleCycle() {
+            printSubtitles(parseCommentsFromSubtitle(getChoice()))
+        }
+
+        function displayHasChoices() {
+            if(hasChoices) {
+                $("#has-choices").text("Choices available");
+                $("#has-choices").removeClass("red-choice")
+                $("#has-choices").addClass("green-choice")
+            } else {
+                $("#has-choices").text("No choices left");
+                $("#has-choices").removeClass("green-choice")
+                $("#has-choices").addClass("red-choice")
+            }
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function scrollSubtitles(subtitleText, delayBetweenLetters) {
+            var displayText = ""
+            for(var i = 0; i < subtitleText.length; i++) {
+                displayText += subtitleText[i]
+                await sleep(50)
+                $("#subtitle-container").text(displayText);
+            }
+        }
+
+        function printSubtitles(result) {
+            displayHasChoices()
+            if(result[1] == null) {
+                $("#notes-container").text(`Notes: -`);
+            } else {
+                $("#notes-container").text("Notes: " + result[1]);
+            }
+
+            scrollSubtitles(result[0])
+        }
+
+        function getChoice() {
+            let currentChoicesLength = currentChoices.length
+
+            if(currentChoicesLength == 0) {
+                return
+            } else if(currentChoicesLength == 1) {
+                hasChoices = false
+                text = currentChoices[0]
+            } else {
+                hasChoices = true
+                let choiceIndex = Math.floor(Math.random() * currentChoicesLength);
+                text = currentChoices.splice(choiceIndex, 1)[0];
+            }
+            return text
+        }
+
+        function parseCommentsFromSubtitle(subtitleText) {
+            var comment = subtitleText.match(/<[^)]*>/,'')
+            var result = subtitleText.replace(/<[^)]*>/,'')
+            return [result, comment]
+        }
+
+        $(document).ready(function() {
+            $(this).keydown((e) => {
+                if(e.key === "ArrowLeft") {
+                    handlePrevious()
+                } else if(e.key === "ArrowRight") {
+                    handleNext()
+                } else if(e.key === "ArrowUp" || e.key === "ArrowDown") {
+                    handleCycle()
+                } else {
+                    return
+                }
+            })
+            $("#previous-button").click((e) => {
+                handlePrevious()
+            })
+            $("#next-button").click((e) => {
+                handleNext()
+            })
+            $("#cycle-button").click((e) => {
+                handleCycle()
+            })
+
+            currentChoices = Array.from(subtitles[subtitlesIndex])
+            printSubtitles(parseCommentsFromSubtitle(getChoice()))
+        })
+    </script>
+</body>
